@@ -1,0 +1,36 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Синя ділянка",
+        "fill-color": "#007cbf",
+        "line-color": "#004a73",
+        "opacity": 0.3
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [24.282379167459, 49.2506164703114],
+            [24.28292567168276, 49.24996819255537],
+            [24.283341791648922, 49.250082275571174],
+            [24.282753675429547, 49.2507341734603],
+            [24.282379167459, 49.2506164703114]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [24.283326, 49.250008]     
+      }, 
+      "properties": {
+        "label": "39"
+      }
+    }
+  ]
+}

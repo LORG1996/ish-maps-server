@@ -1,0 +1,38 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Оранжевий масив 1",
+        "label": "Масив 17",
+        "fill-color": "#ff9800",
+        "line-color": "#e65100",
+        "opacity": 0.35
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [24.179868389880426, 49.29700154395516],
+            [24.180451050567058, 49.29477140083975],
+            [24.18496667088897, 49.29544995404987],
+            [24.184051061237597, 49.297508174978844],
+            [24.179868389880426, 49.29700154395516]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [24.182405, 49.296033]  
+      },
+      "properties": {
+        "label": "20"
+      }
+    }
+  ]
+}
