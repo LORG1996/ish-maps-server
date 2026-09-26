@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>Території для проповідування</title>
+    <!-- ВИПРАВЛЕНО: Додано viewport-fit=cover для коректної роботи з вирізом iOS -->
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+    <!-- Зовнішні бібліотеки та стилі -->
+    <script src="assets/dexie.js"></script>
+    <link href="assets/mapbox-gl.css" rel="stylesheet">
+    <script src="assets/mapbox-gl.js"></script>
+    <script src="capacitor.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100vh !important;
+            background-color: #f0f0f0;
+        }
+
+        /* Фікс для Safari канвасу */
+        canvas.mapboxgl-canvas {
+            display: block !important;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
+
+        #marker-tools {
+            position: fixed; bottom: 80px; left: 15px; z-index: 1000;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+
+        /* Група кнопок у правому нижньому куті */
+        .map-controls-group {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .map-btn-circle {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: transform 0.1s;
+        }
+        .map-btn-circle:active { transform: scale(0.9); }
+
+        /* ВІДКОРИГОВАНО: Верхня панель з урахуванням безпечної зони iPhone без накладання */
+        /* ВІДКОРИГОВАНО: Збільшено відступ зверху, щоб панель була нижче динамічного острову */
+                .top-controls {
+                    position: absolute;
+                    top: calc(env(safe-area-inset-top) + 12px);
+                    left: 10px;
+                    right: 10px;
+                    z-index: 1500;
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 10px;
+                    pointer-events: none;
+                }
+                .top-controls > * { pointer-events: auto; }
+
+        /* Вікно авторизації */
+        #auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.85);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        .auth-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 360px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            font-family: inherit;
+        }
+        .auth-card h3 { margin-top: 0; color: #1e293b; font-size: 20px; }
+        .auth-card input, .auth-card button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .auth-card button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: background 0.2s;
+        }
+        .auth-card button:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+
+<!-- Модальне вікно авторизації -->
+<div id="auth-overlay">
+    <div class="auth-card">
+        <h3>🔐 Вхід до системи</h3>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 10px;">Введіть пароль доступу для продовження</p>
+
+        <input type="password" id="auth-password-input" placeholder="Введіть пароль">
+        <button type="button" onclick="window.handleAuthSubmit()">Увійти</button>
+
+        <button type="button" onclick="window.setCustomPassword()" style="background: #64748b; margin-top: 8px; font-size: 12px; padding: 10px;">
+            ⚙️ Змінити власний пароль
+        </button>
+    </div>
+</div>
+
+<div id="marker-tools"></div>
+
+<div class="main-container">
+    <div id="towns-sidebar" class="sidebar collapsed">
+        <div class="sidebar-header">
+            <span>Населені пункти</span>
+            <button id="close-sidebar" class="toggle-btn-inline">×</button>
+        </div>
+        <div id="towns-list"></div>
+    </div>
+
+    <div class="content-area">
+        <div class="top-controls">
+            <button id="open-sidebar" class="toggle-btn">☰</button>
+            <div class="search-container">
+                <input type="text" id="location-search" placeholder="Назва або номер території">
+                <div id="search-results"></div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+
+        <div class="map-controls-group">
+            <button id="map-style-toggle" class="map-btn-circle" onclick="window.toggleMapStyle()" title="Змінити тип карти">
+                <span id="style-icon">🛰️</span>
+            </button>
+
+            <!-- 1. ЖУРНАЛ: Імпорт міток поточної території з CSV -->
+            <label class="map-btn-circle" title="Імпорт міток поточної території з CSV" style="margin: 0;">
+                <span>📖</span>
+                <input type="file" id="importCsvInput" onchange="window.importMarkersFromCSV(event)" style="display: none;">
+            </label>
+
+            <!-- 2. Експорт міток поточної території -->
+            <button id="exportJsonBtn" class="map-btn-circle" onclick="window.exportMarkersToCSV()" title="Експорт міток поточної території у CSV">
+                <span>📢</span>
+            </button>
+
+            <!-- 3. ДИСКЕТА: Експорт усіх міток по всіх селах (разом з аудіо) -->
+            <button class="map-btn-circle" onclick="window.exportAllMarkersToCSV()" title="Завантажити ВСІ записи по ВСІХ селах (CSV)">
+                <span>💾</span>
+            </button>
+
+            <!-- 4. ЗАВАНТАЖЕННЯ: Імпорт усіх міток по всіх селах -->
+            <label class="map-btn-circle" title="Імпортувати ВСІ записи по ВСІХ селах з CSV" style="margin: 0;">
+                <span>📥</span>
+                <input type="file" id="importAllCsvInput" onchange="window.importAllMarkersFromCSV(event)" style="display: none;">
+            </label>
+
+            <!-- Кнопка повного очищення у лівому нижньому куті -->
+            <button class="map-btn-circle" onclick="window.clearAllMarkers()" title="УВАГА: Видалити абсолютно всі маркери!" style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; border-color: #ff4d4d; background-color: rgba(255, 77, 77, 0.1);">
+                <span>🗑️</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Підключення всіх скриптів у правильному порядку -->
+<script src="js/audio-recorder.js"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db-logic.js"></script>
+<script src="js/offline-logic.js"></script>
+<script src="js/map-core.js"></script>
+<script src="js/ui-logic.js"></script>
+
+<script>
+    // --- 1. ГЛОБАЛЬНІ ЗМІННІ ---
+    window.currentTownName = "Вибрана ділянка";
+    let isUiInitialized = false;
+
+    function getCurrentTown() {
+        const urlParams = new URLSearchParams(window.location.search);
+        let town = urlParams.get('town');
+
+        if (!town) {
+            town = 'berezhnytsia';
+            const newUrl = window.location.pathname + '?town=' + town;
+            window.history.replaceState({town: town}, '', newUrl);
+        }
+        return town;
+    }
+
+    // --- 2. ІНІЦІАЛІЗАЦІЯ ІНТЕРФЕЙСУ ---
+    async function setupMapInterface() {
+        if (isUiInitialized) return;
+
+        if (window.initTownsSidebar) window.initTownsSidebar();
+        if (window.initSearch) window.initSearch();
+
+        const town = getCurrentTown();
+        if (window.renderVillageLayers) {
+            window.renderVillageLayers(town);
+        }
+
+        isUiInitialized = true;
+    }
+
+    document.addEventListener('mapLoaded', setupMapInterface);
+    if (window.map && window.map.loaded()) {
+        setupMapInterface();
+    }
+
+    // --- 3. ФУНКЦІЯ ПОВНОГО ОЧИЩЕННЯ З ПОДВІЙНИМ ПОПЕРЕДЖЕННЯМ ---
+    window.clearAllMarkers = async function() {
+        const firstConfirm = confirm("УВАГА! Ви збираєтесь видалити абсолютно всі маркери та аудіозаписи по всіх селах із бази даних!\n\nВи впевнені, що хочете продовжити?");
+        if (!firstConfirm) return;
+
+        const secondConfirm = confirm("🔴 УВАГА! ЦЮ ДІЮ НЕМОЖЛИВО СКАСУВАТИ!\n\nВи точно-точно хочете НАЗАВЖДИ стерти всі дані?");
+        if (!secondConfirm) return;
+
+        try {
+            if (window.db && window.db.markers) {
+                await window.db.markers.clear();
+                alert("Усі мітки та записи успішно видалено з бази.");
+                const currentTown = new URLSearchParams(window.location.search).get('town') || 'berezhnytsia';
+                if (typeof window.loadUserMarkers === 'function') {
+                    window.loadUserMarkers(currentTown);
+                } else {
+                    window.location.reload();
+                }
+            } else {
+                alert("Помилка: База даних не знайдена.");
+            }
+        } catch (err) {
+            console.error("Помилка при очищенні бази даних:", err);
+            alert("Сталася помилка під час видалення даних: " + err.message);
+        }
+    };
+</script>
+</body>
+</html>
