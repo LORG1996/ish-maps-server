@@ -14,5 +14,3 @@ pkill -f server.py
 python3 server.py &
 
 echo "Сервер запущено у фоні на https://localhost:8443"
-
-open https://localhost:8443
