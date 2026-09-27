@@ -67,6 +67,27 @@
         }
         .map-btn-circle:active { transform: scale(0.9); }
 
+        #share-town-btn {
+            position: fixed;
+            left: 50%;
+            bottom: max(16px, env(safe-area-inset-bottom));
+            transform: translateX(-50%);
+            z-index: 1000;
+            min-height: 48px;
+            padding: 0 18px;
+            border: none;
+            border-radius: 24px;
+            background: #2563eb;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            font: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        #share-town-btn:active { transform: translateX(-50%) scale(0.96); }
+
         /* ВІДКОРИГОВАНО: Верхня панель з урахуванням безпечної зони iPhone без накладання */
         /* ВІДКОРИГОВАНО: Збільшено відступ зверху, щоб панель була нижче динамічного острову */
                 .top-controls {
@@ -167,6 +188,10 @@
 
         <div id="map"></div>
 
+        <button id="share-town-btn" type="button" onclick="window.shareCurrentTownLink()">
+            Поділитися посиланням
+        </button>
+
         <div class="map-controls-group">
             <button id="map-style-toggle" class="map-btn-circle" onclick="window.toggleMapStyle()" title="Змінити тип карти">
                 <span id="style-icon">🛰️</span>
@@ -227,6 +252,44 @@
         }
         return town;
     }
+
+    window.shareCurrentTownLink = async function() {
+        const town = getCurrentTown();
+        const townName = (window.townConfig && window.townConfig[town] && window.townConfig[town].name)
+            || window.currentTownName
+            || town;
+        const shareUrl = new URL('https://127.0.0.1:8443/');
+        shareUrl.searchParams.set('town', town);
+
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: townName, text: `Карта населеного пункту: ${townName}`, url: shareUrl.href });
+                return;
+            }
+
+            await navigator.clipboard.writeText(shareUrl.href);
+            alert(`Посилання на «${townName}» скопійовано:\n${shareUrl.href}`);
+        } catch (error) {
+            if (error && error.name === 'AbortError') return;
+            try {
+                const temporaryInput = document.createElement('textarea');
+                temporaryInput.value = shareUrl.href;
+                temporaryInput.style.position = 'fixed';
+                temporaryInput.style.opacity = '0';
+                document.body.appendChild(temporaryInput);
+                temporaryInput.select();
+                const copied = document.execCommand('copy');
+                temporaryInput.remove();
+                if (!copied) {
+                    prompt('Скопіюйте посилання:', shareUrl.href);
+                    return;
+                }
+                alert(`Посилання на «${townName}» скопійовано:\n${shareUrl.href}`);
+            } catch (copyError) {
+                prompt('Скопіюйте посилання:', shareUrl.href);
+            }
+        }
+    };
 
     // --- 2. ІНІЦІАЛІЗАЦІЯ ІНТЕРФЕЙСУ ---
     async function setupMapInterface() {
