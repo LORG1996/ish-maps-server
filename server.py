@@ -1,7 +1,7 @@
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import ssl
 
-server_address = ('0.0.0.0', 8443)
+server_address = ('127.0.0.1', 8443)
 httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
 
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
