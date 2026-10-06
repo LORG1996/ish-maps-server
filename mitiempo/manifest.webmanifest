@@ -1,0 +1,12 @@
+{
+  "name": "Mi tiempo — Mapa y registro",
+  "short_name": "Mi tiempo",
+  "description": "Mapa personal con marcas y registro mensual de tiempo",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#dce5e1",
+  "theme_color": "#173f37",
+  "lang": "es",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

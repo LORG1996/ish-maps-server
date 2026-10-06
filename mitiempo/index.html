@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173f37">
+  <meta name="description" content="Mapa personal y registro de tiempo">
+  <title>Mi tiempo</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="map-app">
+    <header class="map-header">
+      <div><p class="eyebrow">Registro personal</p><h1>Mi tiempo</h1></div>
+      <div class="header-actions">
+        <button class="round-button" id="locateButton" type="button" aria-label="Mi ubicación" title="Mi ubicación">⌖</button>
+        <button class="round-button map-type-button" id="mapTypeButton" type="button" aria-label="Cambiar a vista satélite" title="Cambiar a vista satélite">SAT</button>
+        <button class="round-button" id="statsButton" type="button" aria-label="Estadísticas y datos" title="Estadísticas y datos">⚙</button>
+      </div>
+    </header>
+
+    <main class="map-stage">
+      <div class="map-message" id="mapMessage">Preparando el mapa…</div>
+      <div id="mapCanvas" class="map-canvas" aria-label="Mapa de lugares"></div>
+
+      <form class="marker-sheet" id="markerForm" hidden>
+        <div><strong>Nueva marca</strong><div class="coordinates" id="draftCoordinates"></div></div>
+        <input id="markerComment" type="text" maxlength="200" placeholder="Comentario opcional">
+        <button class="primary-button" type="submit">Guardar</button>
+        <button class="icon-text-button" id="cancelMarkerButton" type="button">Cancelar</button>
+      </form>
+
+      <section class="compact-tracker" id="timerCard" aria-label="Temporizador">
+        <div class="compact-time">
+          <span class="timer" id="timerDisplay" aria-live="polite">00:00:00</span>
+          <span class="timer-status" id="timerStatus">Listo</span>
+        </div>
+        <div class="compact-actions">
+          <button class="tracker-start" id="startPauseButton" type="button">Iniciar</button>
+          <button class="tracker-icon" id="stopButton" type="button" disabled aria-label="Terminar y guardar" title="Terminar y guardar">■</button>
+          <button class="tracker-icon" id="manualButton" type="button" aria-label="Añadir tiempo" title="Añadir tiempo">＋</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="statsDialog" class="stats-dialog">
+    <div class="dialog-scroll">
+      <div class="dialog-heading"><div><p class="eyebrow">Resumen</p><h2>Estadísticas</h2></div><button class="round-button close-button" id="closeStatsButton" type="button" aria-label="Cerrar">×</button></div>
+
+      <section class="month-card">
+        <button class="month-arrow" id="previousMonth" type="button" aria-label="Mes anterior">‹</button>
+        <div><p class="muted" id="monthHint">Mes actual</p><h2 id="monthTitle"></h2><input class="month-picker" id="monthPicker" type="month" aria-label="Elegir mes"></div>
+        <button class="month-arrow" id="nextMonth" type="button" aria-label="Mes siguiente">›</button>
+      </section>
+      <section class="summary-grid" id="summaryGrid" aria-label="Resumen del mes"></section>
+
+      <section class="dialog-section">
+        <div class="section-heading"><h2>Registros de tiempo</h2><button class="small-button" id="dialogManualButton" type="button">+ Añadir</button></div>
+        <div class="empty-state" id="emptyState"><p>Aún no hay registros este mes.</p></div>
+        <div class="entry-list" id="entryList"></div>
+      </section>
+
+      <section class="dialog-section">
+        <div class="section-heading"><h2>Marcas guardadas</h2></div>
+        <div class="empty-state" id="emptyMarkers"><p>Aún no hay marcas guardadas.</p></div>
+        <div class="marker-list" id="markerList"></div>
+      </section>
+
+      <section class="dialog-section data-section">
+        <div><h2>Copia JSON</h2><p>Guarda o restaura el tiempo y las marcas.</p></div>
+        <div class="backup-actions">
+          <button class="secondary-button" id="exportButton" type="button">Descargar</button>
+          <label class="secondary-button file-button">Restaurar<input id="importInput" type="file" accept="application/json,.json"></label>
+        </div>
+        <p class="backup-date" id="backupDate">Aún no se ha descargado una copia</p>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog id="manualDialog">
+    <form method="dialog" id="manualForm">
+      <div class="dialog-heading"><h2 id="manualDialogTitle">Añadir tiempo</h2><button class="round-button close-button" value="cancel" type="submit" aria-label="Cerrar">×</button></div>
+      <input id="editingEntryId" type="hidden">
+      <label><span class="field-label">Fecha</span><input id="manualDate" type="date" required></label>
+      <div class="two-columns">
+        <label><span class="field-label">Horas</span><input id="manualHours" type="number" min="0" max="999" value="1" required></label>
+        <label><span class="field-label">Minutos</span><input id="manualMinutes" type="number" min="0" max="59" value="0" required></label>
+      </div>
+      <label><span class="field-label">Comentario</span><input id="manualNote" type="text" maxlength="160" placeholder="Opcional"></label>
+      <p class="form-error" id="manualError"></p>
+      <button class="primary-button" id="saveManualButton" value="default" type="submit">Guardar</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="vendor/dexie.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
